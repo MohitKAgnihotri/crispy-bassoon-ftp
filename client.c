@@ -12,94 +12,110 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdbool.h>
+#include "utility.h"
 #include "client.h"
-
-
-
-
-
 
 #define SERVER_NAME_LEN_MAX 255
 
-int get_user_input(char *buffer){
-    //clear buffer
-    memset(buffer, 0, (int)sizeof(buffer));
+ftpConnectionCB_t connectCb;
 
-    //print prompt
-    printf("ftp> ");
-
-    //get user input
-    if(fgets(buffer, 1024, stdin) == NULL)
+void handle_USER_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
+{
+    char server_message[1024] = {0};
+    snprintf(server_message, MAX_SOCKET_MSG_LEN_SIZE,"%s %s","USER", buffer);
+    size_t write_len = write (socketfd,server_message,strlen(server_message)+1);
+    if (write_len == 0)
     {
-        return CLIENT_FAILURE;
+        printf("ftp>disconnected\n");
+        printf("ftp>bye\n");
+        exit(0);
     }
 
-    buffer[strcspn(buffer, "\r\n")] = 0;
-    return CLIENT_SUCCESS;
+    size_t read_len = read(socketfd,server_message, 1024);
+    if (read_len == 0)
+    {
+        printf("ftp>disconnected\n");
+        printf("ftp>bye\n");
+        exit(0);
+    }
+
+    //Received response from the server
+    printf("ftp>%s\n",server_message);
+    if (strncmp(server_message,"Username OK, password required",sizeof("Username OK, password required")) == 0)
+    {
+        connCB->connState |= USERNAME_VERIFIED;
+    }
 }
 
-char VALID_FTP_COMMANDS[][32] = { {"USER"},
-                                  {"PASS"},
-                                  {"PUT"},
-                                  {"GET"},
-                                  {"!LS"},
-                                  {"CD"},
-                                  {"!CD"},
-                                  {"PWD"},
-                                  {"!PWD"},
-                                  {"QUIT"}
-};
-
-
-void handle_USER_Command(char *buffer, int socketfd)
+void handle_PASS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
-    printf("\n USER");
+    if (connCB->connState & USERNAME_VERIFIED) {
+        char server_message[1024] = {0};
+        snprintf(server_message, MAX_SOCKET_MSG_LEN_SIZE, "%s %s", "PASS", buffer);
+        size_t write_len = write(socketfd, server_message, strlen(server_message) + 1);
+        if (write_len == 0) {
+            printf("ftp>disconnected\n");
+            printf("ftp>bye\n");
+            exit(0);
+        }
+
+        size_t read_len = read(socketfd, server_message, 1024);
+        if (read_len == 0) {
+            printf("ftp>disconnected\n");
+            printf("ftp>bye\n");
+            exit(0);
+        }
+
+        //Received response from the server
+        printf("ftp>%s\n", server_message);
+        if (strncmp(server_message, "Username OK, password required", sizeof("Username OK, password required")) == 0) {
+            connCB->connState |= USERNAME_AUTHENTICATED;
+        }
+    } else {
+        printf("ftp> Username is not set\n");
+    }
 }
 
-void handle_PASS_Command(char *buffer, int socketfd)
-{
-    printf("\n PASS");
-}
-
-void handle_PUT_Command(char *buffer, int socketfd)
+void handle_PUT_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
     printf("\n PUT");
 }
 
-void handle_GET_Command(char *buffer, int socketfd)
+void handle_GET_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
     printf("\n GET");
 }
 
-void handle_LS_REMOTE_Command(char *buffer, int socketfd)
+void handle_LS_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
     printf("\n LS_REMOTE");
 }
 
 
-void handle_PWD_REMOTE_Command(char *buffer, int socketfd)
+void handle_PWD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
     printf("\n PWD_REMOTE");
 }
 
-void handle_PWD_Command(char *buffer, int socketfd)
+void handle_PWD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
     printf("\n PWD");
 }
 
-void handle_CD_REMOTE_Command(char *buffer, int socketfd)
+void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
     printf("\n CD_REMOTE");
 }
 
-void handle_CD_Command(char *buffer, int socketfd)
+void handle_CD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
     printf("\n CD");
 }
 
-void handle_QUIT_Command(char *buffer, int socketfd)
+void handle_QUIT_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
-    printf("\n QUIT");
+    printf("ftp>bye\n");
+    exit(0);
 }
 
 ftp_command supportedFtpCommands[10] = {handle_USER_Command,
@@ -114,21 +130,6 @@ ftp_command supportedFtpCommands[10] = {handle_USER_Command,
                                         handle_QUIT_Command
 
 };
-
-
-int isValidCommand(const char* command)
-{
-    for (int i = 0; i < 10; i++)
-    {
-        if(strcmp(VALID_FTP_COMMANDS[i], command) == 0)
-        {
-            return i;
-        }
-    }
-    return CLIENT_INVALID_COMMAND;
-}
-
-
 
 int main(int argc, char *argv[])
 {
@@ -178,23 +179,26 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    connectCb.connState = CONNECTED;
+
     bool isSessionEnd = false;
 
-    int commandIdx = CLIENT_INVALID_COMMAND;
+    int commandIdx = INVALID_COMMAND;
 
     while(!isSessionEnd) {
-        char message_buffer[1024];
-        get_user_input(message_buffer);
+        char *command, *argument;
 
-        while ((commandIdx = isValidCommand(message_buffer)) == CLIENT_INVALID_COMMAND)
+        get_user_command(&command, &argument);
+        while ((commandIdx = isValidCommand(command)) == INVALID_COMMAND)
         {
-            printf("ftp> incorrect command. try again");
-            get_user_input(message_buffer);
+            printf("ftp> incorrect command. try again\n");
+            free(command); command = NULL;
+            free(argument); argument = NULL;
+            get_user_command(&command, &argument);
         }
-
-        supportedFtpCommands[commandIdx](message_buffer, socket_fd);
-
-
+        supportedFtpCommands[commandIdx](&connectCb, argument, socket_fd);
+        free(command); command = NULL;
+        free(argument); argument = NULL;
     }
 
     close(socket_fd);
