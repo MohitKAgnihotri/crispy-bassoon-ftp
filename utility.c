@@ -12,6 +12,19 @@
 #include <stdbool.h>
 #include "utility.h"
 
+supportedFtpCommands_t supportedFtpCommands[10] = {{"USER",handle_USER_Command},
+                                                   {"PASS",handle_PASS_Command},
+                                                   {"PUT",handle_PUT_Command},
+                                                   {"GET",handle_GET_Command},
+                                                   {"!LS",handle_LS_REMOTE_Command},
+                                                   {"!PWD",handle_PWD_REMOTE_Command},
+                                                   {"PWD",handle_PWD_Command},
+                                                   {"!CD",handle_CD_REMOTE_Command},
+                                                   {"CD",handle_CD_Command},
+                                                   {"QUIT",handle_QUIT_Command}
+
+};
+
 int get_user_input(char **input)
 {
     *input = (char*) malloc(MAX_ARG_SIZE * sizeof(char));
@@ -61,23 +74,11 @@ int get_user_command(char **command, char **argument)
     return SUCCESS;
 }
 
-char VALID_FTP_COMMANDS[][32] = { {"USER"},
-                                  {"PASS"},
-                                  {"PUT"},
-                                  {"GET"},
-                                  {"!LS"},
-                                  {"CD"},
-                                  {"!CD"},
-                                  {"PWD"},
-                                  {"!PWD"},
-                                  {"QUIT"}
-};
-
 int isValidCommand(const char* command)
 {
     for (int i = 0; i < 10; i++)
     {
-        if(strcmp(VALID_FTP_COMMANDS[i], command) == 0)
+        if(strcmp(supportedFtpCommands[i].commandName, command) == 0)
         {
             return i;
         }

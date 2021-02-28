@@ -35,6 +35,24 @@ typedef struct ftpConnectionCB
     char argument[MAX_ARG_SIZE];
 }ftpConnectionCB_t;
 
+
+
 typedef void (*ftp_command) (ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+
+typedef struct supportedFtpCommands{
+    char commandName[10];
+    ftp_command pfnCommandHandler;
+}supportedFtpCommands_t;
+
+void handle_USER_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_PASS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_PUT_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_GET_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_LS_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_PWD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_PWD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_CD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_QUIT_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
 
 #endif //CRISPY_BASSOON_FTP_UTILITY_H

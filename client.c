@@ -17,6 +17,8 @@
 
 #define SERVER_NAME_LEN_MAX 255
 
+extern supportedFtpCommands_t supportedFtpCommands[10];
+
 ftpConnectionCB_t connectCb;
 
 void handle_USER_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
@@ -118,19 +120,6 @@ void handle_QUIT_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
     exit(0);
 }
 
-ftp_command supportedFtpCommands[10] = {handle_USER_Command,
-                                        handle_PASS_Command,
-                                        handle_PUT_Command,
-                                        handle_GET_Command,
-                                        handle_LS_REMOTE_Command,
-                                        handle_PWD_REMOTE_Command,
-                                        handle_PWD_Command,
-                                        handle_CD_REMOTE_Command,
-                                        handle_CD_Command,
-                                        handle_QUIT_Command
-
-};
-
 int main(int argc, char *argv[])
 {
     char server_name[SERVER_NAME_LEN_MAX + 1] = { 0 };
@@ -196,7 +185,7 @@ int main(int argc, char *argv[])
             free(argument); argument = NULL;
             get_user_command(&command, &argument);
         }
-        supportedFtpCommands[commandIdx](&connectCb, argument, socket_fd);
+        supportedFtpCommands[commandIdx].pfnCommandHandler(&connectCb, argument, socket_fd);
         free(command); command = NULL;
         free(argument); argument = NULL;
     }
