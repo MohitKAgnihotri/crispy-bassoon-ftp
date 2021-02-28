@@ -126,7 +126,6 @@ int main(int argc, char *argv[])
     int server_port, socket_fd;
     struct hostent *server_host;
     struct sockaddr_in server_address;
-    char message_received[300];
 
     /* Get server name from command line arguments or stdin. */
     if (argc > 1)

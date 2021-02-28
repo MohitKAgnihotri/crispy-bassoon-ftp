@@ -1,16 +1,11 @@
 #include <netinet/in.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netdb.h>
 #include "utility.h"
 #include "server.h"
 
@@ -38,15 +33,17 @@ int CreateServerSocket(int port);
 
 int server_socket_fd;
 
-static auth_info_t authInfo[MAX_USERS] = {{0},
-                                          {0}};
+static auth_info_t authInfo[MAX_USERS] = {0};
 static int number_of_users = 0;
 
-int SendResponse(size_t len, char *message, int socket) {
+int SendResponse(size_t len, char *message, int socket)
+{
     size_t writeLen = write(socket, message, len);
-    if (writeLen <= 0) {
+    if (writeLen <= 0)
+    {
         perror("SendResponse");
     }
+    return writeLen;
 }
 
 
@@ -204,10 +201,7 @@ unsigned int getActiveUserCb(int socketFd, activeUserInfo_t *activeUserControlBl
 
 
 int main(int argc, char *argv[]) {
-    int port, new_socket_fd;
-    pthread_attr_t pthread_client_attr;
-    pthread_t pthread;
-
+    int port;
     struct sockaddr_in client_address;
     char *authenticationFile = NULL;
     socklen_t size;
@@ -215,7 +209,6 @@ int main(int argc, char *argv[]) {
 
     // Select() variables
     fd_set active_fd_set, read_fd_set;
-    int connection_fd_range;
     FD_ZERO(&active_fd_set);
     FD_ZERO(&read_fd_set);
 
@@ -244,38 +237,6 @@ int main(int argc, char *argv[]) {
 
     /*Setup active user database*/
     activeUserInfo_t activeUser[MAX_USERS] = {0};
-#if 0
-    /* Initialise pthread attribute to create detached threads. */
-    if (pthread_attr_init(&pthread_client_attr) != 0) {
-        perror("pthread_attr_init");
-        exit(1);
-    }
-    if (pthread_attr_setdetachstate(&pthread_client_attr, PTHREAD_CREATE_DETACHED) != 0) {
-        perror("pthread_attr_setdetachstate");
-        exit(1);
-    }
-
-    while (1)
-    {
-
-        /* Accept connection to client. */
-        socklen_t client_address_len = sizeof(client_address);
-        new_socket_fd = accept(server_socket_fd, (struct sockaddr *) &client_address, &client_address_len);
-        if (new_socket_fd == -1) {
-            perror("accept");
-            continue;
-        }
-
-        printf("Client connected\n");
-        unsigned int *thread_arg = (unsigned int *) malloc(sizeof(unsigned int));
-        *thread_arg = new_socket_fd;
-        /* Create thread to serve connection to client. */
-        if (pthread_create(&pthread, &pthread_client_attr, pthread_routine, (void *) thread_arg) != 0) {
-            perror("pthread_create");
-            continue;
-        }
-    }
-#endif
 
     while (1) {
         unsigned int userIndex = 0;
@@ -377,38 +338,6 @@ void SetupSignalHandler() {/* Assign signal handlers to signals. */
         perror("signal");
         exit(1);
     }
-}
-
-
-void *pthread_routine(void *arg) {
-    int scoketfd = *(int *) arg;
-    free(arg);
-    char message_buffer[1024] = {0};
-    ftpConnectionCB_t connectionCB = {0};
-
-    connectionCB.connState |= CONNECTED;
-    while (1) {
-        int commandIdx = INVALID_COMMAND;
-        memset(message_buffer, 0x00, 1024);
-        size_t readlen = read(scoketfd, message_buffer, 1024);
-        if (readlen > 0) {
-            char command[MAX_CMD_SIZE] = {0}, argument[MAX_ARG_SIZE] = {0};
-            sscanf(message_buffer, "%s %s", command, argument);
-            if ((commandIdx = isValidCommand(command)) == INVALID_COMMAND) {
-                sendErrorMessage(scoketfd, command);
-            }
-            supportedFtpCommands[commandIdx].pfnCommandHandler(&connectionCB, argument, scoketfd);
-        } else {
-            if (readlen == 0) {
-                printf("ftp>Client Disconnected\n");
-                pthread_exit(0);
-            } else {
-                perror("read failed\n");
-                pthread_exit(0);
-            }
-        }
-    }
-
 }
 
 void signal_handler(int signal_number) {
