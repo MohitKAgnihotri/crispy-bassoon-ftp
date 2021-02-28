@@ -300,8 +300,7 @@ int main(int argc, char *argv[]) {
                         exit(EXIT_FAILURE);
                     }
 
-                    fprintf(stderr,
-                            "Server: connect from host %s, port %hd.\n",
+                    printf("Server: connect from host %s, port %u.\n",
                             inet_ntoa(client_address.sin_addr),
                             ntohs(client_address.sin_port));
 
