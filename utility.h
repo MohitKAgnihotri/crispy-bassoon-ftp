@@ -5,6 +5,8 @@
 #ifndef CRISPY_BASSOON_FTP_UTILITY_H
 #define CRISPY_BASSOON_FTP_UTILITY_H
 
+#define MAX_SUPPORTED_COMMANDS 11
+
 #define MAX_CMD_SIZE 32u
 #define MAX_ARG_SIZE 255u
 #define MAX_USER_INPUT_SIZE 255u
@@ -49,6 +51,7 @@ void handle_PASS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
 void handle_PUT_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
 void handle_GET_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
 void handle_LS_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
+void handle_LS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
 void handle_PWD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
 void handle_PWD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);
 void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd);

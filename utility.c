@@ -12,15 +12,16 @@
 #include <stdbool.h>
 #include "utility.h"
 
-supportedFtpCommands_t supportedFtpCommands[10] = {{"USER",handle_USER_Command},
+supportedFtpCommands_t supportedFtpCommands[MAX_SUPPORTED_COMMANDS] = {{"USER",handle_USER_Command},
                                                    {"PASS",handle_PASS_Command},
                                                    {"PUT",handle_PUT_Command},
                                                    {"GET",handle_GET_Command},
-                                                   {"!LS",handle_LS_REMOTE_Command},
-                                                   {"!PWD",handle_PWD_REMOTE_Command},
-                                                   {"PWD",handle_PWD_Command},
-                                                   {"!CD",handle_CD_REMOTE_Command},
-                                                   {"CD",handle_CD_Command},
+                                                   {"!LS",handle_LS_Command},
+                                                   {"LS",handle_LS_REMOTE_Command},
+                                                   {"!PWD",handle_PWD_Command},
+                                                   {"PWD",handle_PWD_REMOTE_Command},
+                                                   {"!CD",handle_CD_Command},
+                                                   {"CD",handle_CD_REMOTE_Command},
                                                    {"QUIT",handle_QUIT_Command}
 
 };

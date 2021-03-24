@@ -17,7 +17,7 @@
 
 #define SERVER_NAME_LEN_MAX 255
 
-extern supportedFtpCommands_t supportedFtpCommands[10];
+extern supportedFtpCommands_t supportedFtpCommands[MAX_SUPPORTED_COMMANDS];
 
 ftpConnectionCB_t connectCb;
 
@@ -70,7 +70,7 @@ void handle_PASS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 
         //Received response from the server
         printf("ftp>%s\n", server_message);
-        if (strncmp(server_message, "Username OK, password required", sizeof("Username OK, password required")) == 0) {
+        if (strncmp(server_message, "Authentication complete", sizeof("Authentication complete")) == 0) {
             connCB->connState |= USERNAME_AUTHENTICATED;
         }
     } else {
@@ -90,18 +90,88 @@ void handle_GET_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 
 void handle_LS_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
-    printf("\n LS_REMOTE");
+    if (connCB->connState & USERNAME_AUTHENTICATED) {
+        char server_message[1024] = {0};
+        snprintf(server_message, MAX_SOCKET_MSG_LEN_SIZE, "%s", "LS");
+        size_t write_len = write(socketfd, server_message, strlen(server_message) + 1);
+        if (write_len == 0) {
+            printf("ftp>disconnected\n");
+            printf("ftp>bye\n");
+            exit(0);
+        }
+
+        size_t read_len = read(socketfd, server_message, 1024);
+        if (read_len == 0) {
+            printf("ftp>disconnected\n");
+            printf("ftp>bye\n");
+            exit(0);
+        }
+
+        //Received response from the server
+        printf("ftp>%s\n", server_message);
+    }
+    else
+    {
+        printf("ftp> User is not authenticated\n");
+    }
 }
 
+void handle_LS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
+{
+    char message[MAX_USER_INPUT_SIZE] = {0};
+    FILE *fp = popen("ls","r");
+    if (!fp)
+    {
+        printf("Failed to execute the command \n");
+        perror("popen");
+        return;
+    }
+    while (fgets(message, sizeof(message), fp) != NULL) {
+        printf("%s", message);
+    }
+}
 
 void handle_PWD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
-    printf("\n PWD_REMOTE");
+    if (connCB->connState & USERNAME_AUTHENTICATED) {
+        char server_message[1024] = {0};
+        snprintf(server_message, MAX_SOCKET_MSG_LEN_SIZE, "%s", "PWD");
+        size_t write_len = write(socketfd, server_message, strlen(server_message) + 1);
+        if (write_len == 0) {
+            printf("ftp>disconnected\n");
+            printf("ftp>bye\n");
+            exit(0);
+        }
+
+        size_t read_len = read(socketfd, server_message, 1024);
+        if (read_len == 0) {
+            printf("ftp>disconnected\n");
+            printf("ftp>bye\n");
+            exit(0);
+        }
+
+        //Received response from the server
+        printf("ftp>%s\n", server_message);
+    }
+    else
+    {
+        printf("ftp> User is not authenticated\n");
+    }
 }
 
 void handle_PWD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
-    printf("\n PWD");
+    char message[MAX_USER_INPUT_SIZE] = {0};
+    FILE *fp = popen("pwd","r");
+    if (!fp)
+    {
+        printf("Failed to execute the command \n");
+        perror("popen");
+        return;
+    }
+    while (fgets(message, sizeof(message), fp) != NULL) {
+        printf("%s", message);
+    }
 }
 
 void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)

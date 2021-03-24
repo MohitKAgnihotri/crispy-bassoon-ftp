@@ -17,7 +17,7 @@ typedef struct auth_info
 
 typedef struct activeUserInfo
 {
-    bool isFree;
+    bool isInuse;
     int socketfd;
     ftpConnectionCB_t connCb;
 }activeUserInfo_t;

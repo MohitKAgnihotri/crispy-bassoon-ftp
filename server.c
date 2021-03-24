@@ -14,7 +14,7 @@
 #define PORT_NUM 1313
 
 
-extern supportedFtpCommands_t supportedFtpCommands[10];
+extern supportedFtpCommands_t supportedFtpCommands[MAX_SUPPORTED_COMMANDS];
 
 bool isValidUserName(const char *username);
 
@@ -88,16 +88,50 @@ void handle_GET_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
     printf("\n GET");
 }
 
+void handle_LS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
+}
+
 void handle_LS_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
-    printf("\n LS_REMOTE");
+    char resp_message[MAX_SOCKET_MSG_LEN_SIZE] = {0};
+    char readbuff[32] = {0};
+    FILE *fp = popen("ls","r");
+    if (!fp)
+    {
+        printf("Failed to execute the command \n");
+        perror("popen");
+        return;
+    }
+
+    while (fgets(readbuff, sizeof(readbuff), fp) != NULL)
+    {
+        strcat(resp_message,readbuff);
+    }
+
+    SendResponse(MAX_SOCKET_MSG_LEN_SIZE, resp_message, socketfd);
 }
 
 void handle_PWD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
-    printf("\n PWD_REMOTE");
+
+    char resp_message[MAX_SOCKET_MSG_LEN_SIZE] = {0};
+    char readbuff[32] = {0};
+    FILE *fp = popen("pwd","r");
+    if (!fp)
+    {
+        printf("Failed to execute the command \n");
+        perror("popen");
+        return;
+    }
+
+    while (fgets(readbuff, sizeof(readbuff), fp) != NULL)
+    {
+        strcat(resp_message,readbuff);
+    }
+
+    SendResponse(MAX_SOCKET_MSG_LEN_SIZE, resp_message, socketfd);
 }
 
 void handle_PWD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
-    printf("\n PWD");
+
 }
 
 void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
@@ -174,7 +208,7 @@ int read_from_client(activeUserInfo_t *controlBlock, int filedes)
 
 unsigned int AllocatedActiveUuserControlBlock(activeUserInfo_t *activeUserControlBlocks) {
     for (int i = 0; i < MAX_USERS; i++) {
-        if (activeUserControlBlocks[i].isFree) {
+        if (!activeUserControlBlocks[i].isInuse) {
             return i;
         }
     }
@@ -183,7 +217,7 @@ unsigned int AllocatedActiveUuserControlBlock(activeUserInfo_t *activeUserContro
 
 void FreeActiveUuserControlBlock(activeUserInfo_t *activeUserControlBlocks, unsigned int userIndex) {
     if (userIndex < MAX_USERS && activeUserControlBlocks) {
-        activeUserControlBlocks[userIndex].isFree = true;
+        activeUserControlBlocks[userIndex].isInuse = false;
         activeUserControlBlocks[userIndex].socketfd = -1;
         memset(&activeUserControlBlocks[userIndex].connCb, 0x00, sizeof(ftpConnectionCB_t));
     }
@@ -269,19 +303,23 @@ int main(int argc, char *argv[]) {
                     if ((userIndex = AllocatedActiveUuserControlBlock(activeUser)) != MAX_USERS)
                     {
                         //control block successfully allocated
-                        activeUser[userIndex].isFree = false;
+                        activeUser[userIndex].isInuse = true;
                         activeUser[userIndex].socketfd = client_socket;
                         activeUser[userIndex].connCb.connState |= CONNECTED;
                     }
                 }
                 else
                 {
-                    /* Data arriving on an already-connected socket. */
-                    if (read_from_client(&activeUser[getActiveUserCb(i, activeUser)], i) < 0)
+                    userIndex = getActiveUserCb(i, activeUser);
+                    if (MAX_USERS != userIndex)
                     {
-                        close(i);
-                        FD_CLR (i, &active_fd_set);
-                        FreeActiveUuserControlBlock(activeUser, getActiveUserCb(i, activeUser));
+                        /* Data arriving on an already-connected socket. */
+                        if (read_from_client(&activeUser[userIndex], i) < 0)
+                        {
+                            close(i);
+                            FD_CLR (i, &active_fd_set);
+                            FreeActiveUuserControlBlock(activeUser, getActiveUserCb(i, activeUser));
+                        }
                     }
                 }
             }
