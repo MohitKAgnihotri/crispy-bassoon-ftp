@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdbool.h>
+#include <dirent.h>
+#include <errno.h>
 #include "utility.h"
 #include "client.h"
 
@@ -176,12 +178,62 @@ void handle_PWD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 
 void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
-    printf("\n CD_REMOTE");
+    if (connCB->connState & USERNAME_AUTHENTICATED)
+    {
+        char server_message[1024] = {0};
+        snprintf(server_message, MAX_SOCKET_MSG_LEN_SIZE, "%s %s", "CD", buffer);
+        size_t write_len = write(socketfd, server_message, strlen(server_message) + 1);
+        if (write_len == 0) {
+            printf("ftp>disconnected\n");
+            printf("ftp>bye\n");
+            exit(0);
+        }
+
+        size_t read_len = read(socketfd, server_message, 1024);
+        if (read_len == 0) {
+            printf("ftp>disconnected\n");
+            printf("ftp>bye\n");
+            exit(0);
+        }
+
+        //Received response from the server
+        printf("ftp>%s\n", server_message);
+    }
+    else
+    {
+        printf("ftp> User is not authenticated\n");
+    }
 }
 
 void handle_CD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
-    printf("\n CD");
+    DIR* dir = opendir(buffer);
+    if (dir)
+    {
+        /* Directory exists. */
+        closedir(dir);
+        int status = chdir(buffer);
+        if (status != 0)
+        {
+            perror("chdir failed:");
+        }
+
+        char current_work_dir[1024];
+        char *path  = getcwd(current_work_dir, 1024);
+        if (path != NULL)
+        {
+            printf("Current working dir = %s\n",current_work_dir);
+        }
+
+    } else if (ENOENT == errno)
+    {
+        /* Directory does not exist. */
+    }
+    else
+    {
+        /* opendir() failed for some other reason. */
+    }
+
 }
 
 void handle_QUIT_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
