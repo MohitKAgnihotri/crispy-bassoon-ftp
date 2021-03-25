@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <arpa/inet.h>
+#include <dirent.h>
+#include <errno.h>
 #include "utility.h"
 #include "server.h"
 
@@ -134,8 +136,38 @@ void handle_PWD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
 
 }
 
-void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
-    printf("\n CD_REMOTE");
+void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
+{
+    char server_response[MAX_SOCKET_MSG_LEN_SIZE] = {0};
+    DIR* dir = opendir(buffer);
+    if (dir)
+    {
+        /* Directory exists. */
+        closedir(dir);
+        int status = chdir(buffer);
+        if (status != 0)
+        {
+            perror("chdir failed:");
+        }
+
+        char current_work_dir[1024];
+        char *path  = getcwd(current_work_dir, 1024);
+        if (path != NULL)
+        {
+            snprintf(server_response,MAX_SOCKET_MSG_LEN_SIZE,"Current working dir = %s\n",current_work_dir);
+        }
+
+    }
+    else if (ENOENT == errno)
+    {
+        snprintf(server_response,MAX_SOCKET_MSG_LEN_SIZE, "Directory = %s doesn't exist\n",buffer);
+    }
+    else
+    {
+        snprintf(server_response,MAX_SOCKET_MSG_LEN_SIZE, "Directory = %s doesn't exist\n",buffer);
+    }
+
+    SendResponse(MAX_SOCKET_MSG_LEN_SIZE, server_response, socketfd);
 }
 
 void handle_CD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
