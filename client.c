@@ -1,8 +1,4 @@
-//
-// Created by 310165137 on 25/02/2021.
-//
-
-
+handle_USER_Command
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -135,7 +131,8 @@ void handle_LS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 
 void handle_PWD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
 {
-    if (connCB->connState & USERNAME_AUTHENTICATED) {
+    if (connCB->connState & USERNAME_AUTHENTICATED)
+    {
         char server_message[1024] = {0};
         snprintf(server_message, MAX_SOCKET_MSG_LEN_SIZE, "%s", "PWD");
         size_t write_len = write(socketfd, server_message, strlen(server_message) + 1);
@@ -233,7 +230,6 @@ void handle_CD_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
     {
         /* opendir() failed for some other reason. */
     }
-
 }
 
 void handle_QUIT_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)

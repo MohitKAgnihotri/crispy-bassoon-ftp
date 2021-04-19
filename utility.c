@@ -1,6 +1,4 @@
-//
-// Created by 310165137 on 26/02/2021.
-//
+
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>

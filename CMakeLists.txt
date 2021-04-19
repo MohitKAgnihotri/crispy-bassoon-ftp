@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(crispy_bassoon_ftp C)
 
 set(CMAKE_C_STANDARD 11)
-link_libraries(pthread)
+
 set(CMAKE_C_FLAGS "-g3 -Wall -Werror -Wpedantic")
 
 include_directories(.)

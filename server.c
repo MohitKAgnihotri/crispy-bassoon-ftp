@@ -96,6 +96,10 @@ void handle_LS_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
 void handle_LS_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
     char resp_message[MAX_SOCKET_MSG_LEN_SIZE] = {0};
     char readbuff[32] = {0};
+
+    /*This command runs the system command provided and stores the output in a
+     * pipe. The output can be read using a file descriptor. */
+
     FILE *fp = popen("ls","r");
     if (!fp)
     {
@@ -112,8 +116,8 @@ void handle_LS_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socke
     SendResponse(MAX_SOCKET_MSG_LEN_SIZE, resp_message, socketfd);
 }
 
-void handle_PWD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd) {
-
+void handle_PWD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socketfd)
+{
     char resp_message[MAX_SOCKET_MSG_LEN_SIZE] = {0};
     char readbuff[32] = {0};
     FILE *fp = popen("pwd","r");
@@ -156,7 +160,6 @@ void handle_CD_REMOTE_Command(ftpConnectionCB_t *connCB, char *buffer, int socke
         {
             snprintf(server_response,MAX_SOCKET_MSG_LEN_SIZE,"Current working dir = %s\n",current_work_dir);
         }
-
     }
     else if (ENOENT == errno)
     {
